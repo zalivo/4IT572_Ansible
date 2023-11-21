@@ -1,0 +1,19 @@
+- name: Deploy to EC2
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Launch EC2 Instance
+      ec2_instance:
+        instance_type: t2.micro
+        image_id: ami-0230bd60aa48260c6
+        region: us-east-1
+        key_name: test.pem
+        vpc_subnet_id: subnet-092d62088ac450325
+        count: 1
+        network:
+          assign_public_ip: yes
+        wait: yes
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        security_token: "{{ session_token }}"
