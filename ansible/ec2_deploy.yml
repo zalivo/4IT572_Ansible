@@ -27,18 +27,11 @@
       loop: "{{ ec2_instance_result.instances }}"
 
     - name: Wait for SSH connection
-      block:
-        - name: Retry for SSH connection
-          wait_for_connection:
-            delay: 60
-            timeout: 600
-          retries: 10
-          loop: "{{ ec2_instance_result.instances }}"
-          delay: 10
-          until: result.ansible_facts['persistent_connect_time'] is defined
-      rescue:
-        - fail:
-            msg: "Failed to establish SSH connection with EC2 instances"
+      delegate_to: "{{ item.public_dns_name }}"
+      wait_for_connection:
+        delay: 60
+        timeout: 600
+      loop: "{{ ec2_instance_result.instances }}"
 
 - name: Configure EC2
   hosts: launched
@@ -53,35 +46,29 @@
         state: latest
         update_cache: yes
       become: yes
-
     - service:
         name: docker
         state: started
         enabled: yes
       become: yes
-
     - name: Start Docker on startup
       shell: systemctl enable docker
       become: yes
-
     - name: Set rights to docker
       shell: usermod -a -G docker ec2-user
       become: yes
-
     - name: Get project files from git
       git:
         repo: 'https://github.com/zalivo/4IT572_docker.git'
         dest: ./app
-
     - name: Build docker with eshop
       shell: cd app && docker build -t myeshop:latest .
       become: yes
-
     - name: Run Docker with eshop
       shell: docker run -p 80:3000 myeshop
       async: 45
       poll: 0
       become: yes
-
     - wait_for:
-        port: 80
+        port:
+          80
